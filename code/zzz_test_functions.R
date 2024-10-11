@@ -165,20 +165,5 @@ dec2 |>
   geom_line() +
   scale_y_log10()
 
-dec$cc |> sum()
 
-m <-
-trans |> 
-  filter(educ == "total", sex == "m") |> 
-  pivot_longer(HH:UD, names_to = 'transition',values_to = "p")  
-initm <- init_pars$m
-names(initm) <- c("H","U")
-f <-
-  trans |> 
-  filter(educ == "total", sex == "f") |> 
-  pivot_longer(HH:UD, names_to = 'transition',values_to = "p") 
-initf <- init_pars$f
-names(initf) <- c("H","U")
-f2t(f, init = initf, expectancy = "h", interval = .25)- 
-  f2t(m, init = initm, expectancy = "h", interval = .25)
 
