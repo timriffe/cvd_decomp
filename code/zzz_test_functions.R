@@ -156,8 +156,8 @@ dec_total |>
   group_by(transition) |> 
   summarize(cc = sum(cc))
 
-
-
+write_csv(dec_total, file = "data/dec_total.csv")
+write_csv(kit, file = "data/kitagawa.csv")
 dec2 |> 
   filter(transition != "init") |> 
   mutate(age = age) |>
