@@ -14,7 +14,7 @@ IN2$educ |> unique()
 
 
 dec2 <- 
-IN2 |> 
+  IN2 |> 
   group_by(educ) |> 
   group_modify(~do_dec(data = .x)) |> 
   ungroup()
