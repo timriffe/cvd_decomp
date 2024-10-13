@@ -10,6 +10,9 @@ dec_total |>
   pivot_longer(-transition, names_to = "educ", values_to = "cc") |> 
   pivot_wider(names_from = transition, values_from = cc)
 
+dec_total |> 
+  group_by(educ) |> 
+  summarize(cc = sum(cc))
 # and their respective contributions to the 
 # total gender gap
 dec_total |> 
