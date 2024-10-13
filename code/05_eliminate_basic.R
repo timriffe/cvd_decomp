@@ -79,6 +79,7 @@ dec_total4 |>
   sum() + sum(kit4$structure_effect)
 
 # compare with stationary difference:
+total_stationary$HLE_f - total_stationary$HLE_m 
 total_stationary4$HLE_f - total_stationary4$HLE_m 
 
 total_stationary
