@@ -4,12 +4,12 @@ source("code/01_functions.R")
 IN2 <- read_excel("data/TP_2016_2020.xlsx") |> 
   fselect(1:10)
 
-# decompositions between like-education groups, i.e.
+# sex decompositions between like-education groups, i.e.
 # basic vs basic, etc includes initial health conditions.
 dec2 <- 
   IN2 |> 
   group_by(educ) |> 
-  group_modify(~do_dec(data = .x)) |> 
+  group_modify(~do_dec_gender(data = .x)) |> 
   ungroup()
 
 # To know how to weight these, we need all cvd-free life
@@ -66,7 +66,7 @@ total_stationary <-
   mutate(variant = "stationary", .before = 1)
 
 
-# compare total vcd=free life expectancy (blended versus observed)
+# compare total cvd-free life expectancy (blended versus observed)
 total_hle <- 
   total_stationary |> 
   bind_rows(total_non_stationary)
