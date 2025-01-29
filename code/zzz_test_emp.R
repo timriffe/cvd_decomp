@@ -2,6 +2,8 @@
 library(tidyverse)
 library(readxl)
 
+run_this <- FALSE
+if (run_this){
 file_names <- c("TP_2000_04.xlsx",
                 "TP_2016_20.xlsx")
 dat_out <- structure(list(period = character(0), gender = character(0), 
@@ -45,7 +47,13 @@ dat_out <-
          educ = tolower(educ)) |> 
   filter(!is.na(age))
 
+write_csv(dat_out, file = "data/TP_emp.csv.gz")
+}
 
+# just skip the above and read in results
+dat_out <- read_csv("data/TP_emp.csv.gz")
+
+# custom chunk smoother function, very very simplified.
 smooth.spline.chunk <- function(chunk, 
                                 age_out =  seq(40,99.75,by=.25)){
   chunk <- chunk |> filter(!is.na(EMP))
@@ -53,8 +61,9 @@ smooth.spline.chunk <- function(chunk,
   tibble(age = age_out,
          sm_sp = predict(mod, x = age_out)$y |> exp())
 }
+
 sm_compare <- 
-dat_out |> 
+  dat_out |> 
   group_by(period, gender, educ, transition) |> 
   group_modify(~ smooth.spline.chunk(chunk = .x)) |> 
   left_join(dat_out, by = join_by(period, gender, educ, transition,age))
@@ -70,4 +79,6 @@ sm_compare |>
   facet_wrap(period~transition)
   
 
-  
+# I might rather replace this spline approach with a P-spline or similar, maybe via mgcv::gam(),
+# just because it'll be easier to write down the formula in the manuscript, but the result ought 
+# to be basically the same
