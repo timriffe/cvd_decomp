@@ -88,12 +88,17 @@ mpi_compare <-
   group_modify(~ mono_psline_scam_chunk(chunk = .x, k = 6)) |> 
   left_join(dat_out, by = join_by(period, gender, educ, transition,age))
 
+run_this <- FALSE
+if (run_this){
+  # for comparing fits with empirical and dtms model fits
 mpi_compare |> 
-  filter(educ == "total",     #"tertiary" "basic" "secondary" "total"
-         gender == "women") |>   # "men" "women"
+  filter(educ == "secondary",     #"tertiary" "basic" "secondary" "total"
+         gender == "men") |>   # "men" "women"
   ggplot(aes(x = age, y = p_fit)) +
   geom_line(linewidth = 1) +
   scale_y_log10() +
   geom_point(mapping = aes(y = EMP), alpha = .25) +
   geom_line(mapping = aes(y = MOD), color = "red") +
-  facet_wrap(period~transition)
+  facet_wrap(period~transition) +
+  theme_minimal()
+}
