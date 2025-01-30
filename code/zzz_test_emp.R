@@ -51,7 +51,8 @@ write_csv(dat_out, file = "data/TP_emp.csv.gz")
 }
 
 # just skip the above and read in results
-dat_out <- read_csv("data/TP_emp.csv.gz")
+dat_out <- read_csv("data/TP_emp.csv.gz",
+                    show_col_types = FALSE)
 
 # custom chunk smoother function, very very simplified.
 smooth.spline.chunk <- function(chunk, 
@@ -82,3 +83,47 @@ sm_compare |>
 # I might rather replace this spline approach with a P-spline or similar, maybe via mgcv::gam(),
 # just because it'll be easier to write down the formula in the manuscript, but the result ought 
 # to be basically the same
+library(mgcv)
+library(scam)
+# newdata <- tibble(age = seq(40,100,by=.25), denom = 1)
+
+# chunk <- dat_out |> 
+#   filter(gender == "men",
+#          educ == "basic",
+#          period == "2016_20",
+#          transition == "UD")
+
+mono_psline_scam_chunk <- function(chunk, k = 6){
+  newdata <- tibble(age = seq(40,100,by=.25), denom = 1)
+  chunk |> 
+    mutate(y = round(EMP * denom)) |> 
+    filter(!is.na(y),
+           !is.nan(y),
+           denom > 0) %>% 
+    scam(y ~ s(age, bs = "mpi", k = k) + offset(log(denom)),
+         data = .,
+         family = poisson) |> 
+    predict(newdata = newdata) |> 
+    as_tibble() |> 
+    rename(logp = value) |> 
+    bind_cols(newdata) |> 
+    mutate(p_fit = exp(logp)) |> 
+    select(-logp,-denom) 
+  
+}
+
+mpi_compare <- 
+  dat_out |> 
+  group_by(period, gender, educ, transition) |> 
+  group_modify(~ mono_psline_scam_chunk(chunk = .x, k = 6)) |> 
+  left_join(dat_out, by = join_by(period, gender, educ, transition,age))
+
+mpi_compare |> 
+  filter(educ == "total",     #"tertiary" "basic" "secondary" "total"
+         gender == "women") |>   # "men" "women"
+  ggplot(aes(x = age, y = p_fit)) +
+  geom_line(linewidth = 1) +
+  scale_y_log10() +
+  geom_point(mapping = aes(y = EMP), alpha = .25) +
+  geom_line(mapping = aes(y = MOD), color = "red") +
+  facet_wrap(period~transition)
