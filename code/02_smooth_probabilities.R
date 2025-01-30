@@ -63,7 +63,7 @@ dat_out <- read_csv("data/TP_emp.csv.gz",
                     show_col_types = FALSE)
 
 
-mono_psline_scam_chunk <- function(chunk, k = 6){
+mono_pspline_scam_chunk <- function(chunk, k = 6){
   newdata <- tibble(age = seq(40,100,by=.25), denom = 1)
   chunk |> 
     mutate(y = round(EMP * denom)) |> 
@@ -85,8 +85,13 @@ mono_psline_scam_chunk <- function(chunk, k = 6){
 mpi_compare <- 
   dat_out |> 
   group_by(period, gender, educ, transition) |> 
-  group_modify(~ mono_psline_scam_chunk(chunk = .x, k = 6)) |> 
-  left_join(dat_out, by = join_by(period, gender, educ, transition,age))
+  group_modify(~ mono_pspline_scam_chunk(chunk = .x, k = 6)) |> 
+  left_join(dat_out, by = join_by(period, gender, educ, transition,age)) |> 
+  relocate(p_fit, .after = MOD) |> 
+  rename(p_emp = EMP,
+         p_dtms = MOD)
+
+write_csv(mpi_compare, "data/TP_final.csv.gz")
 
 run_this <- FALSE
 if (run_this){
