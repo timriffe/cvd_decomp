@@ -77,33 +77,69 @@ mono_pspline_scam_chunk <- function(chunk, k = 6){
     as_tibble() |> 
     rename(logp = value) |> 
     bind_cols(newdata) |> 
-    mutate(p_fit = exp(logp)) |> 
+    mutate(mpi_fit = exp(logp)) |> 
     select(-logp,-denom) 
   
 }
+pspline_gam_chunk <- function(chunk, k = 6){
+  newdata <- tibble(age = seq(40,100,by=.25), denom = 1)
+  chunk |> 
+    mutate(y = round(EMP * denom)) |> 
+    filter(!is.na(y),
+           !is.nan(y),
+           denom > 0) %>% 
+    gam(y ~ s(age, bs = "ps", k = k) + offset(log(denom)),
+         data = .,
+         family = poisson) |> 
+    predict(newdata = newdata) |> 
+    as_tibble() |> 
+    rename(logp = value) |> 
+    bind_cols(newdata) |> 
+    mutate(ps_fit = exp(logp)) |> 
+    select(-logp,-denom) 
+}
 
-mpi_compare <- 
+ps_results <- 
   dat_out |> 
   group_by(period, gender, educ, transition) |> 
-  group_modify(~ mono_pspline_scam_chunk(chunk = .x, k = 6)) |> 
-  left_join(dat_out, by = join_by(period, gender, educ, transition,age)) |> 
-  relocate(p_fit, .after = MOD) |> 
-  rename(p_emp = EMP,
-         p_dtms = MOD)
+  group_modify(~ pspline_gam_chunk(chunk = .x, k = 6))
 
-write_csv(mpi_compare, "data/TP_final.csv.gz")
+mpi_results <-
+  dat_out |> 
+  group_by(period, gender, educ, transition) |> 
+  group_modify(~ mono_pspline_scam_chunk(chunk = .x, k = 6))
+
+logistic_weights <- function(x, scale, pivot_age){
+  1 / (1+exp(-scale* (x - pivot_age)))
+}
+
+all_compare <- 
+  mpi_results |> 
+  left_join(dat_out, by = join_by(period, gender, educ, transition, age)) |> 
+  relocate(mpi_fit, .after = MOD) |> 
+  rename(p_emp = EMP,
+         p_dtms = MOD) |> 
+  left_join(ps_results, by = join_by(period, gender, educ, transition, age))|> 
+  group_by(period, gender, educ, transition) |> 
+  mutate(w = logistic_weights(x = age, scale = .5, pivot_age = 75),
+         p_final = mpi_fit * w + ps_fit * (1 - w))
+
+write_csv(all_compare, "data/TP_final.csv.gz")
 
 run_this <- FALSE
 if (run_this){
-  # for comparing fits with empirical and dtms model fits
-mpi_compare |> 
-  filter(educ == "secondary",     #"tertiary" "basic" "secondary" "total"
-         gender == "men") |>   # "men" "women"
-  ggplot(aes(x = age, y = p_fit)) +
-  geom_line(linewidth = 1) +
+  # for comparing fits with empirical, dtms, ps, and mpi 
+  all_compare |> 
+  filter(educ == "basic",     #"tertiary" "basic" "secondary" "total"
+         gender == "women") |>   # "men" "women"
+  ggplot(aes(x = age, y = mpi_fit)) +
+  geom_line(linewidth = 1, color = "blue", linetype = 1) +
   scale_y_log10() +
-  geom_point(mapping = aes(y = EMP), alpha = .25) +
-  geom_line(mapping = aes(y = MOD), color = "red") +
+  geom_point(mapping = aes(y = p_emp), alpha = .1) +
+  # geom_line(mapping = aes(y = p_dtms), color = "red") +
+  geom_line(mapping = aes(y = ps_fit), color = "red", linetype = 2,linewidth = 1) +
   facet_wrap(period~transition) +
   theme_minimal()
 }
+
+
