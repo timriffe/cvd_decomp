@@ -133,7 +133,8 @@ if (run_this){
   filter(educ == "basic",     #"tertiary" "basic" "secondary" "total"
          gender == "women") |>   # "men" "women"
   ggplot(aes(x = age, y = mpi_fit)) +
-  geom_line(linewidth = 1, color = "blue", linetype = 1) +
+  geom_line(mapping = aes(y = p_final), linewidth = 1, color = "green") +
+  geom_line(linewidth = 1, color = "blue", linetype = 3) +
   scale_y_log10() +
   geom_point(mapping = aes(y = p_emp), alpha = .1) +
   # geom_line(mapping = aes(y = p_dtms), color = "red") +
