@@ -113,6 +113,14 @@ logistic_weights <- function(x, scale, pivot_age){
   1 / (1+exp(-scale* (x - pivot_age)))
 }
 
+# view weighting function
+# tibble(age = seq(40,100,by = .25)) |> 
+#   mutate(w = logistic_weights(x = age, scale = .5, pivot_age = 75)) |> 
+#   ggplot(aes(x=age,y=w)) +
+#   theme_minimal() +
+#   geom_line()
+
+
 all_compare <- 
   mpi_results |> 
   left_join(dat_out, by = join_by(period, gender, educ, transition, age)) |> 
@@ -126,11 +134,17 @@ all_compare <-
 
 write_csv(all_compare, "data/TP_final.csv.gz")
 
+# check: we're still constrained overall
+# all_compare |> 
+#   group_by(state_from, educ, gender, period, age) |> 
+#   summarize(p = sum(p_final)) |> 
+#   filter(p > 1)
+
 run_this <- FALSE
 if (run_this){
   # for comparing fits with empirical, dtms, ps, and mpi 
   all_compare |> 
-  filter(educ == "basic",     #"tertiary" "basic" "secondary" "total"
+  filter(educ == "total",     #"tertiary" "basic" "secondary" "total"
          gender == "women") |>   # "men" "women"
   ggplot(aes(x = age, y = mpi_fit)) +
   geom_line(mapping = aes(y = p_final), linewidth = 1, color = "green") +
