@@ -2,7 +2,7 @@ source("code/02_decompose.R")
 # For example, some margin tables
 
 
-# educ-specific decomposition margins
+# educ-specific gender decomposition margins
 dec_total |> 
   group_by(educ, transition) |> 
   summarize(cc = sum(cc)) |> 
