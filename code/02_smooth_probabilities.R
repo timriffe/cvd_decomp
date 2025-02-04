@@ -132,10 +132,46 @@ all_compare <-
   rename(p_ps = ps_fit) |> 
   group_by(period, gender, educ, transition) |> 
   mutate(w = logistic_weights(x = age, scale = .5, pivot_age = 75),
-         p_hybrid = p_mpi * w + p_ps * (1 - w))
+         p_hybrid = p_mpi * w + p_ps * (1 - w)) |> 
+  ungroup() |> 
+  select(-w, -denom) |> 
+  pivot_longer(p_emp:p_hybrid, names_to = "version", values_to = "p") |> 
+  mutate(period = if_else(period == "2000_04","2000-2004","2016-2020"))
 
-write_csv(all_compare, "data/TP_final.csv.gz")
 
+# get initial conditions coded same as before
+# under HH and UU
+versions <- all_compare |> 
+  ungroup() |> 
+  select(version) |> 
+  distinct()
+
+init <-
+  dat_out |> 
+  mutate(state_from = substr(transition,1,1)) |> 
+  select(period, gender, educ, transition, state_from, age, denom) |> 
+  filter(age < 45) |> 
+  group_by(period, gender, educ, age, state_from) |> 
+  slice(1) |> 
+  group_by(period,  gender, educ, state_from) |> 
+  summarize(init = sum(denom), .groups = "drop") |> 
+  group_by(period,  gender, educ) |> 
+  mutate(init = init / sum(init)) |> 
+  ungroup() |> 
+  mutate(transition = paste0(state_from, state_from),
+         period = if_else(period == "2000_04","2000-2004","2016-2020")) |> 
+  cross_join(versions) |> 
+  mutate(age = 40) |> 
+  rename(p = init) 
+
+# join together in our standard way
+TP_final <-
+  all_compare |> 
+  filter(age > 40) |> 
+  bind_rows(init) |> 
+  arrange(version, period, gender, educ, transition, age)
+
+write_csv(TP_final, "data/TP_final.csv.gz")
 # check: we're still constrained overall
 # all_compare |> 
 #   group_by(state_from, educ, gender, period, age) |> 
