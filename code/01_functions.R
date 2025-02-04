@@ -11,11 +11,11 @@ do_dec_gender <- function(data){
   
   init_pars <- 
     prev |> 
-    fselect(sex, H = HH, U = UU) |> 
+    fselect(gender, H = HH, U = UU) |> 
     dt_pivot_longer(H:U, names_to = "state", values_to = "p") |> 
-    dt_pivot_wider(names_from = sex, values_from = p) |> 
-    fmutate(delta = f - m,
-            p = (f + m) / 2)
+    dt_pivot_wider(names_from = gender, values_from = p) |> 
+    fmutate(delta = women - men,
+            p = (women + men) / 2)
   
   init <- init_pars$p
   names(init) <- init_pars$state
@@ -23,10 +23,10 @@ do_dec_gender <- function(data){
   decomp_data <- 
     trans |> 
     dt_pivot_longer(HH:UD, names_to = "transition", values_to = "p") |> 
-    dt_pivot_wider(names_from = sex, values_from = p) |> 
-    fmutate(delta = f - m,
-            p = (f + m) / 2) |> 
-    fselect(-m, -f, -Age) |> 
+    dt_pivot_wider(names_from = gender, values_from = p) |> 
+    fmutate(delta = women - men,
+            p = (women + men) / 2) |> 
+    fselect(-men, -women) |> 
     arrange(transition, age) |> 
     fmutate(age = age - min(age))
   
@@ -34,13 +34,13 @@ do_dec_gender <- function(data){
   sen <-
     decomp_data |> 
     s2t(init = init, expectancy = "h", interval = .25) |> 
-    fmutate(effect = effect)
+    fmutate(effect = effect) # ? what's the missing thought here?
   
   
   dec <- 
     init_pars |> 
     filter(state == "H") |> 
-    fselect(-state,-m,-f) |> 
+    fselect(-state,-men,-women) |> 
     fmutate(transition = "init", age = 0) |> 
     bind_rows(decomp_data) |> 
     filter(! transition %in% c("UU","HH","UH","UD")) |> 
