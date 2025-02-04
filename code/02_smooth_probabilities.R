@@ -126,11 +126,13 @@ all_compare <-
   left_join(dat_out, by = join_by(period, gender, educ, transition, age)) |> 
   relocate(mpi_fit, .after = MOD) |> 
   rename(p_emp = EMP,
-         p_dtms = MOD) |> 
-  left_join(ps_results, by = join_by(period, gender, educ, transition, age))|> 
+         p_dtms = MOD,
+         p_mpi = mpi_fit) |> 
+  left_join(ps_results, by = join_by(period, gender, educ, transition, age)) |> 
+  rename(p_ps = ps_fit) |> 
   group_by(period, gender, educ, transition) |> 
   mutate(w = logistic_weights(x = age, scale = .5, pivot_age = 75),
-         p_final = mpi_fit * w + ps_fit * (1 - w))
+         p_hybrid = p_mpi * w + p_ps * (1 - w))
 
 write_csv(all_compare, "data/TP_final.csv.gz")
 
