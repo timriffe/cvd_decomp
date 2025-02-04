@@ -22,7 +22,7 @@ do_dec_gender <- function(data){
   
   decomp_data <- 
     trans |> 
-    dt_pivot_longer(HH:UD, names_to = "transition", values_to = "p") |> 
+    dt_pivot_longer(c(HH,HU,HD,UU,UH,UD), names_to = "transition", values_to = "p") |> 
     dt_pivot_wider(names_from = gender, values_from = p) |> 
     fmutate(delta = women - men,
             p = (women + men) / 2) |> 
