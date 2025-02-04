@@ -156,5 +156,3 @@ if (run_this){
   facet_wrap(period~transition) +
   theme_minimal()
 }
-
-
