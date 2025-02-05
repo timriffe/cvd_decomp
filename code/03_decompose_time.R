@@ -157,4 +157,3 @@ total_stationary |>
 write_csv(dec_total,"data/dec_total_time.csv.gz")
 write_csv(kit,"data/kitagawa_time.csv")
 
-
