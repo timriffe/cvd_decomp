@@ -81,7 +81,8 @@ total_stationary <-
   group_by(period) |> 
   summarize(educ = "total",
             HLE_women = sum(HLE_women * prev_women),
-            HLE_men = sum(HLE_men * prev_men)) |> 
+            HLE_men = sum(HLE_men * prev_men),
+            .groups = "drop") |> 
   mutate(variant = "stationary", .before = 1)
 
 
@@ -118,7 +119,7 @@ total_stationary$HLE_women - total_stationary$HLE_men
 # and (2) the edu-specific contributions derive from
 # Kitagawa parameters, i.e. they were rescaled.
 
-write_csv(dec_total, file = "data/dec_total_gender.csv")
+write_csv(dec_total, file = "data/dec_total_gender.csv.gz")
 write_csv(kit, file = "data/kitagawa_gender.csv")
 
 

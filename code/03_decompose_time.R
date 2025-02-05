@@ -153,3 +153,8 @@ kit |>
 # compare with below
 total_stationary |> 
   mutate(Delta = `HLE_2016-2020` - `HLE_2000-2004`)
+
+write_csv(dec_total,"data/dec_total_time.csv.gz")
+write_csv(kit,"data/kitagawa_time.csv")
+
+
