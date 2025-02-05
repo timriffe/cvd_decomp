@@ -80,8 +80,8 @@ total_stationary <-
   ungroup() |> 
   group_by(period) |> 
   summarize(educ = "total",
-            HLE_f = sum(HLE_women * prev_women),
-            HLE_m = sum(HLE_men * prev_men)) |> 
+            HLE_women = sum(HLE_women * prev_women),
+            HLE_men = sum(HLE_men * prev_men)) |> 
   mutate(variant = "stationary", .before = 1)
 
 
@@ -92,25 +92,33 @@ total_hle <-
 
 # reweight decompositions:
 dec_total <-
-  dec2 |> 
+  dec |> 
   filter(educ != "total") |> 
-  left_join(dec_weights, by = join_by(educ)) |> 
-  group_by(educ) |> 
+  left_join(dec_weights, by = join_by(educ, period)) |> 
+  group_by(educ, period) |> 
   mutate(cc_total = (cc / sum(cc)) * rate_effect)
 
 # Our complete decomposition, check sums
-dec_total |> 
-  pull(cc_total) |> 
-  sum() + sum(kit$structure_effect)
+Delta_rates <- 
+  dec_total |> 
+  group_by(period) |> 
+  summarize(Delta_rates = sum(cc_total)) 
 
+Delta_structure <-
+  kit |> 
+  group_by(period) |> 
+  summarize(Delta_structure = sum(structure_effect))
+
+Delta_check <- left_join(Delta_rates, Delta_structure, by = join_by(period)) |> 
+  mutate(Delta_check = Delta_rates + Delta_structure)
 # compare with stationary difference:
-total_stationary$HLE_f - total_stationary$HLE_m 
+total_stationary$HLE_women - total_stationary$HLE_men
 
 # This is necessarily exact because (1) Kitagawa is exact,
 # and (2) the edu-specific contributions derive from
 # Kitagawa parameters, i.e. they were rescaled.
 
-write_csv(dec_total, file = "data/dec_total.csv")
-write_csv(kit, file = "data/kitagawa.csv")
+write_csv(dec_total, file = "data/dec_total_gender.csv")
+write_csv(kit, file = "data/kitagawa_gender.csv")
 
 
