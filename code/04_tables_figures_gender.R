@@ -1,4 +1,4 @@
-source("code/02_decompose.R")
+source("code/03_decompose_gender.R")
 # For example, some margin tables
 
 

@@ -28,7 +28,7 @@ IN <- read_csv("data/TP_final.csv.gz", show_col_types = FALSE)  |>
          UU = if_else(is.na(UU), 1 - UD - UH, UU),
          time_mid = if_else(period == "2016-2020",2018,2002)) |> 
   arrange(period, educ, gender, age)
-IN |> head()
+
 # this is 8 different decompositions, so it takes
 # slightly longer than before
 dec <-
@@ -142,3 +142,7 @@ kit |>
 # compare with below
 total_stationary |> 
   mutate(Delta = `HLE_2016-2020` - `HLE_2000-2004`)
+
+dec_total |>  
+  group_by(gender, transition) |> 
+  summarize(cc_rates = sum(cc_total))
