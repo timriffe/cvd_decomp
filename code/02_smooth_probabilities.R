@@ -1,8 +1,6 @@
+source("code/00_setup.R")
+source("code/01_functions.R")
 
-library(tidyverse)
-library(readxl)
-library(mgcv)
-library(scam)
 # Code for wrangling data out of Excel spreadsheets,
 # this is optional: we may be able to share the csv produced.
 # Script can begin after this if ()
@@ -62,43 +60,6 @@ if (run_this){
 dat_out <- read_csv("data/TP_emp.csv.gz",
                     show_col_types = FALSE)
 
-
-mono_pspline_scam_chunk <- function(chunk, k = 6){
-  newdata <- tibble(age = seq(40,100,by=.25), denom = 1)
-  chunk |> 
-    mutate(y = round(EMP * denom)) |> 
-    filter(!is.na(y),
-           !is.nan(y),
-           denom > 0) %>% 
-    scam(y ~ s(age, bs = "mpi", k = k) + offset(log(denom)),
-         data = .,
-         family = poisson) |> 
-    predict(newdata = newdata) |> 
-    as_tibble() |> 
-    rename(logp = value) |> 
-    bind_cols(newdata) |> 
-    mutate(mpi_fit = exp(logp)) |> 
-    select(-logp,-denom) 
-  
-}
-pspline_gam_chunk <- function(chunk, k = 6){
-  newdata <- tibble(age = seq(40,100,by=.25), denom = 1)
-  chunk |> 
-    mutate(y = round(EMP * denom)) |> 
-    filter(!is.na(y),
-           !is.nan(y),
-           denom > 0) %>% 
-    gam(y ~ s(age, bs = "ps", k = k) + offset(log(denom)),
-         data = .,
-         family = poisson) |> 
-    predict(newdata = newdata) |> 
-    as_tibble() |> 
-    rename(logp = value) |> 
-    bind_cols(newdata) |> 
-    mutate(ps_fit = exp(logp)) |> 
-    select(-logp,-denom) 
-}
-
 ps_results <- 
   dat_out |> 
   group_by(period, gender, educ, transition) |> 
@@ -109,9 +70,7 @@ mpi_results <-
   group_by(period, gender, educ, transition) |> 
   group_modify(~ mono_pspline_scam_chunk(chunk = .x, k = 6))
 
-logistic_weights <- function(x, scale, pivot_age){
-  1 / (1+exp(-scale* (x - pivot_age)))
-}
+
 
 # view weighting function
 # tibble(age = seq(40,100,by = .25)) |> 
@@ -183,14 +142,35 @@ if (run_this){
   # for comparing fits with empirical, dtms, ps, and mpi 
   all_compare |> 
   filter(educ == "total",     #"tertiary" "basic" "secondary" "total"
-         gender == "women") |>   # "men" "women"
-  ggplot(aes(x = age, y = mpi_fit)) +
-  geom_line(mapping = aes(y = p_final), linewidth = 1, color = "green") +
+         gender == "men") |>   # "men" "women"
+    pivot_wider(names_from = version, values_from = p) |> 
+  ggplot(aes(x = age, y = p_mpi)) +
+  geom_line(mapping = aes(y = p_hybrid), linewidth = 1, color = "green") +
   geom_line(linewidth = 1, color = "blue", linetype = 3) +
   scale_y_log10() +
   geom_point(mapping = aes(y = p_emp), alpha = .1) +
   # geom_line(mapping = aes(y = p_dtms), color = "red") +
-  geom_line(mapping = aes(y = ps_fit), color = "red", linetype = 2,linewidth = 1) +
+  geom_line(mapping = aes(y = p_ps), color = "red", linetype = 2,linewidth = 1) +
   facet_wrap(period~transition) +
   theme_minimal()
 }
+
+
+
+# create prev_edu datafile 
+prev_edu <-
+  dat_out |> 
+  filter(age < 45,
+         educ != "total") |> 
+  mutate(state_from = substr(transition,1,1)) |> 
+  select(period, gender, educ, state_from, age, denom) |> 
+  group_by(period, gender, educ, age, state_from) |> 
+  slice(1) |> 
+  group_by(period,  gender, educ) |> 
+  summarize(init = sum(denom), .groups = "drop") |> 
+  group_by(period,  gender) |> 
+  mutate(init = init / sum(init)) |> 
+  ungroup() |> 
+  mutate(period = if_else(period == "2000_04","2000-2004","2016-2020"))
+
+write_csv(prev_edu, "data/prev_edu.csv")

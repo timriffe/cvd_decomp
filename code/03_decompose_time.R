@@ -74,14 +74,25 @@ le_for_kit <- expectancies |>
 
 # Prevalence values hard coded. These come from exact age 40; we may replace
 # these prevalence averages from ages 38-42 or so. 
-prev_for_kit <- tibble(educ = c("basic","secondary","tertiary",
-                                "basic","secondary","tertiary"),
-                       gender = c(rep("men",3),rep("women",3)),
-                       prev_1 = c(0.1685,0.5057,0.3258,0.0961,0.4350,0.4689),
-                       prev_2 = c(0.1554,0.4693,0.3753,0.0787,0.3544,0.5669)) |> 
+
+prev_for_kit <- read_csv("data/prev_edu.csv", show_col_types = FALSE) |> 
+  pivot_wider(names_from = period, values_from = init, names_prefix = "prev_") |> 
+  rename(prev_1 = `prev_2000-2004`, prev_2 = `prev_2016-2020`)
+
+# check:
+prev_for_kit |> 
   group_by(gender) |> 
-  mutate(prev_1 = prev_1 / sum(prev_1),
-         prev_2 = prev_2 / sum(prev_2))
+  summarize(check1 = sum(prev_1),
+            check2 = sum(prev_2))
+# prev_for_kit <- tibble(educ = c("basic","secondary","tertiary",
+#                                 "basic","secondary","tertiary"),
+#                        gender = c(rep("men",3),rep("women",3)),
+#                        prev_1 = c(0.1685,0.5057,0.3258,0.0961,0.4350,0.4689),
+#                        prev_2 = c(0.1554,0.4693,0.3753,0.0787,0.3544,0.5669)) |> 
+#   group_by(gender) |> 
+#   mutate(prev_1 = prev_1 / sum(prev_1),
+#          prev_2 = prev_2 / sum(prev_2))
+
 
 # Perform Kitagawa decomposition. Structure effects must be summed;
 # rate effects we use to reweight group0-wise decompositions. This is two decomps,
@@ -143,6 +154,7 @@ kit |>
 total_stationary |> 
   mutate(Delta = `HLE_2016-2020` - `HLE_2000-2004`)
 
-dec_total |>  
-  group_by(gender, transition) |> 
-  summarize(cc_rates = sum(cc_total))
+write_csv(dec_total,"data/dec_total_time.csv.gz")
+write_csv(kit,"data/kitagawa_time.csv")
+
+

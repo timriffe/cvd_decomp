@@ -124,3 +124,50 @@ calc_expectancy <- function(ptibble,
      interval = interval)
 }
 
+
+# used in 02_smooth_probabilities.R
+# does scam p-spline, used to create p_mpi
+mono_pspline_scam_chunk <- function(chunk, k = 6){
+  newdata <- tibble(age = seq(40,100,by=.25), denom = 1)
+  chunk |> 
+    mutate(y = round(EMP * denom)) |> 
+    filter(!is.na(y),
+           !is.nan(y),
+           denom > 0) %>% 
+    scam(y ~ s(age, bs = "mpi", k = k) + offset(log(denom)),
+         data = .,
+         family = poisson) |> 
+    predict(newdata = newdata) |> 
+    as_tibble() |> 
+    rename(logp = value) |> 
+    bind_cols(newdata) |> 
+    mutate(mpi_fit = exp(logp)) |> 
+    select(-logp,-denom) 
+  
+}
+
+# used in 02_smooth_probabilities.R
+# does scam p-spline, used to create p_ps
+pspline_gam_chunk <- function(chunk, k = 6){
+  newdata <- tibble(age = seq(40,100,by=.25), denom = 1)
+  chunk |> 
+    mutate(y = round(EMP * denom)) |> 
+    filter(!is.na(y),
+           !is.nan(y),
+           denom > 0) %>% 
+    gam(y ~ s(age, bs = "ps", k = k) + offset(log(denom)),
+        data = .,
+        family = poisson) |> 
+    predict(newdata = newdata) |> 
+    as_tibble() |> 
+    rename(logp = value) |> 
+    bind_cols(newdata) |> 
+    mutate(ps_fit = exp(logp)) |> 
+    select(-logp,-denom) 
+}
+
+# used in 02_smooth_probabilities.R
+# used to create p_hybrid
+logistic_weights <- function(x, scale, pivot_age){
+  1 / (1+exp(-scale* (x - pivot_age)))
+}
