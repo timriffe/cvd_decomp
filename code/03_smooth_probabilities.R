@@ -46,14 +46,27 @@ ps_both <-
             ps_results_constrained,
             by = join_by(period, gender, educ, transition, age))
 
-ps_both |> 
-  filter(transition == "HU") |> 
-  ggplot(aes(x = age, y = ps_fit, color = educ)) +
-  geom_line() +
-  theme_minimal() +
-  facet_wrap(gender~period) +
-  scale_y_log10() +
-  geom_line(mapping = aes(x = age, y = ps_fit_constrained), linetype = 2)
+# ps_both |> 
+#   filter(transition == "HU") |> 
+#   ggplot(aes(x = age, y = ps_fit, color = educ)) +
+#   geom_line() +
+#   theme_minimal() +
+#   facet_wrap(gender~period) +
+#   scale_y_log10() +
+#   geom_line(mapping = aes(x = age, y = ps_fit_constrained), linetype = 2)
+
+# ps_both |> 
+#   filter(transition %in% c("HD2","UD2")) |> 
+#   select(-ps_fit) |> 
+#   pivot_wider(names_from = transition, values_from  = ps_fit_constrained) |> 
+#   mutate(D2_ratio = UD2/ HD2) |> 
+#   ggplot(aes(x = age, y = D2_ratio, color = educ)) +
+#   geom_line() +
+#   theme_minimal() +
+#   facet_wrap(gender~period) +
+#   geom_hline(yintercept = 1) +
+#   scale_y_log10()
+
 # ps_results <- 
 #   dat_out |> 
 #   group_by(period, gender, educ, transition) |> 
@@ -134,23 +147,24 @@ write_csv(TP_final, "data/TP_final.csv.gz")
 #   summarize(p = sum(p_final)) |> 
 #   filter(p > 1)
 
-run_this <- FALSE
-if (run_this){
-  # for comparing fits with empirical, dtms, ps, and mpi 
-  all_compare |> 
-  filter(educ == "total",     #"tertiary" "basic" "secondary" "total"
-         gender == "men") |>   # "men" "women"
-    pivot_wider(names_from = version, values_from = p) |> 
-  ggplot(aes(x = age, y = p_mpi)) +
-  geom_line(mapping = aes(y = p_hybrid), linewidth = 1, color = "green") +
-  geom_line(linewidth = 1, color = "blue", linetype = 3) +
-  scale_y_log10() +
-  geom_point(mapping = aes(y = p_emp), alpha = .1) +
-  # geom_line(mapping = aes(y = p_dtms), color = "red") +
-  geom_line(mapping = aes(y = p_ps), color = "red", linetype = 2,linewidth = 1) +
-  facet_wrap(period~transition) +
-  theme_minimal()
-}
+# OLD
+# run_this <- FALSE
+# if (run_this){
+#   # for comparing fits with empirical, dtms, ps, and mpi 
+#   all_compare |> 
+#   filter(educ == "total",     #"tertiary" "basic" "secondary" "total"
+#          gender == "men") |>   # "men" "women"
+#     pivot_wider(names_from = version, values_from = p) |> 
+#   ggplot(aes(x = age, y = p_mpi)) +
+#   geom_line(mapping = aes(y = p_hybrid), linewidth = 1, color = "green") +
+#   geom_line(linewidth = 1, color = "blue", linetype = 3) +
+#   scale_y_log10() +
+#   geom_point(mapping = aes(y = p_emp), alpha = .1) +
+#   # geom_line(mapping = aes(y = p_dtms), color = "red") +
+#   geom_line(mapping = aes(y = p_ps), color = "red", linetype = 2,linewidth = 1) +
+#   facet_wrap(period~transition) +
+#   theme_minimal()
+# }
 
 
 
