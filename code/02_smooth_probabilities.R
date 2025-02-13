@@ -1,74 +1,68 @@
 source("code/00_setup.R")
 source("code/01_functions.R")
 
-# Code for wrangling data out of Excel spreadsheets,
-# this is optional: we may be able to share the csv produced.
-# Script can begin after this if ()
-run_this <- FALSE
-if (run_this){
-  file_names <- c("TP_2000_04.xlsx",
-                  "TP_2016_20.xlsx")
-  dat_out <- structure(list(period = character(0), gender = character(0), 
-                            educ = character(0), age = numeric(0), transition = character(0), 
-                            state_from = character(0), EMP = numeric(0), MOD = numeric(0), 
-                            denom = numeric(0)), class = c("tbl_df", "tbl", "data.frame"
-                            ), row.names = integer(0))
-  for (f in file_names){
-    
-    period = substr(f,4,10)
-    for (s in excel_sheets(file.path("data",f))){
-      name_parts <- str_split(s, pattern = " ")[[1]]
-      educ   <- name_parts[1]
-      educ   <- ifelse(educ == "Overall","Total", educ)
-      gender <- name_parts[2]
-      ini    <- read_excel(file.path("data",f), sheet = s) |> 
-        rename(age = 1) |> 
-        select(!contains("...")) |> 
-        mutate(age = (age - (age %% 12))/12 + ( (age %% 12) / 12)) |> 
-        pivot_longer(-age, names_to = c("variant","transition"), names_sep = " ", values_to = "p") |> 
-        mutate(period = period, gender = gender, educ = educ,.before = 1) |> 
-        mutate(state_from = substr(transition,1,1))
-      
-      denom <- ini |> 
-        filter(variant == "DENOM") |> 
-        select(denom = p,state_from, age)
-      
-      ini2 <- 
-        ini |> 
-        filter(variant != "DENOM") |> 
-        pivot_wider(names_from = variant, values_from = p) |> 
-        left_join(denom, by = join_by(state_from, age))
-      
-      dat_out <- bind_rows(dat_out, ini2)
-    }
-  }
-  
-  dat_out <- 
-    dat_out |> 
-    mutate(gender = tolower(gender),
-           educ = tolower(educ)) |> 
-    filter(!is.na(age))
-  
-  write_csv(dat_out, file = "data/TP_emp.csv.gz")
-}
 
-# ------------------------------ #
-# start here
-# just skip the above and read in results
-# ------------------------------ #
-
-dat_out <- read_csv("data/TP_emp.csv.gz",
+dat_emp <- read_csv("data/emp_probs_cod.csv.gz",
                     show_col_types = FALSE)
+denoms <- read_csv("data/denoms.csv.gz",
+                   show_col_types = FALSE)
+
+ps_results |> 
+  pivot_wider(names_from = transition, values_from = ps_fit) |> 
+  mutate(HD_resid = HD1 + HD2 + HD3 - HD,
+         UD_resid = UD1 + UD2 + UD3 - UD) |> 
+  ggplot(aes(x = age, y = HD_resid, color = educ)) +
+  geom_line() +
+  theme_minimal() +
+  facet_wrap(gender~period)
 
 ps_results <- 
-  dat_out |> 
+  dat_emp |> 
+  mutate(state_from = substr(transition,1,1)) |> 
+  left_join(denoms, by = join_by(period, gender, educ, age, state_from)) |> 
+  rename(EMP = p) |> 
   group_by(period, gender, educ, transition) |> 
-  group_modify(~ pspline_gam_chunk(chunk = .x, k = 6))
+  group_modify(~ pspline_gam_chunk(chunk = .x, k = 5))
 
-mpi_results <-
-  dat_out |> 
-  group_by(period, gender, educ, transition) |> 
-  group_modify(~ mono_pspline_scam_chunk(chunk = .x, k = 6))
+
+ps_results_constrained <-
+  ps_results |> 
+  pivot_wider(names_from = transition, values_from = ps_fit) |> 
+  mutate(HD_sum = HD1 + HD2 + HD3,
+         UD_sum = UD1 + UD2 + UD3,
+         HD1 = HD * (HD1 / HD_sum),
+         HD2 = HD * (HD2 / HD_sum),
+         HD3 = HD * (HD3 / HD_sum),
+         UD1 = UD * (UD1 / UD_sum),
+         UD2 = UD * (UD2 / UD_sum),
+         UD3 = UD * (UD3 / UD_sum)) |> 
+  select(-HD_sum,-UD_sum) |> 
+  pivot_longer(-c(period, gender, educ, age), 
+               names_to = "transition", 
+               values_to = "ps_fit_constrained")
+
+ps_both <-
+  full_join(ps_results, 
+            ps_results_constrained,
+            by = join_by(period, gender, educ, transition, age))
+
+ps_both |> 
+  filter(transition == "HU") |> 
+  ggplot(aes(x = age, y = ps_fit, color = educ)) +
+  geom_line() +
+  theme_minimal() +
+  facet_wrap(gender~period) +
+  scale_y_log10() +
+  geom_line(mapping = aes(x = age, y = ps_fit_constrained), linetype = 2)
+# ps_results <- 
+#   dat_out |> 
+#   group_by(period, gender, educ, transition) |> 
+#   group_modify(~ pspline_gam_chunk(chunk = .x, k = 6))
+
+# mpi_results <-
+#   dat_out |> 
+#   group_by(period, gender, educ, transition) |> 
+#   group_modify(~ mono_pspline_scam_chunk(chunk = .x, k = 6))
 
 
 
@@ -78,24 +72,31 @@ mpi_results <-
 #   ggplot(aes(x=age,y=w)) +
 #   theme_minimal() +
 #   geom_line()
+# all_compare <- 
+#   mpi_results |> 
+#   left_join(dat_out, by = join_by(period, gender, educ, transition, age)) |> 
+#   relocate(mpi_fit, .after = MOD) |> 
+#   rename(p_emp = EMP,
+#          p_dtms = MOD,
+#          p_mpi = mpi_fit) |> 
+#   left_join(ps_results, by = join_by(period, gender, educ, transition, age)) |> 
+#   rename(p_ps = ps_fit) |> 
+#   group_by(period, gender, educ, transition) |> 
+#   mutate(w = logistic_weights(x = age, scale = .5, pivot_age = 75),
+#          p_hybrid = p_mpi * w + p_ps * (1 - w)) |> 
+#   ungroup() |> 
+#   select(-w, -denom) |> 
+#   pivot_longer(p_emp:p_hybrid, names_to = "version", values_to = "p") |> 
+#   mutate(period = if_else(period == "2000_04","2000-2004","2016-2020"))
 
 
 all_compare <- 
-  mpi_results |> 
-  left_join(dat_out, by = join_by(period, gender, educ, transition, age)) |> 
-  relocate(mpi_fit, .after = MOD) |> 
-  rename(p_emp = EMP,
-         p_dtms = MOD,
-         p_mpi = mpi_fit) |> 
-  left_join(ps_results, by = join_by(period, gender, educ, transition, age)) |> 
-  rename(p_ps = ps_fit) |> 
-  group_by(period, gender, educ, transition) |> 
-  mutate(w = logistic_weights(x = age, scale = .5, pivot_age = 75),
-         p_hybrid = p_mpi * w + p_ps * (1 - w)) |> 
-  ungroup() |> 
-  select(-w, -denom) |> 
-  pivot_longer(p_emp:p_hybrid, names_to = "version", values_to = "p") |> 
-  mutate(period = if_else(period == "2000_04","2000-2004","2016-2020"))
+  ps_both |> 
+  left_join(dat_emp, by = join_by(period, gender, educ, transition, age)) |> 
+  rename(p_emp = p,
+         p_ps = ps_fit,
+         p_psc = ps_fit_constrained) |> 
+  pivot_longer(c(p_emp,p_ps,p_psc), names_to = "version", values_to = "p")
 
 
 # get initial conditions coded same as before
@@ -106,12 +107,8 @@ versions <- all_compare |>
   distinct()
 
 init <-
-  dat_out |> 
-  mutate(state_from = substr(transition,1,1)) |> 
-  select(period, gender, educ, transition, state_from, age, denom) |> 
+  denoms |> 
   filter(age < 45) |> 
-  group_by(period, gender, educ, age, state_from) |> 
-  slice(1) |> 
   group_by(period,  gender, educ, state_from) |> 
   summarize(init = sum(denom), .groups = "drop") |> 
   group_by(period,  gender, educ) |> 
