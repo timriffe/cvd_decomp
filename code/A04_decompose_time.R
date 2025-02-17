@@ -1,26 +1,9 @@
 source("code/00_setup.R")
 source("code/01_functions.R")
 
-# IN1 <- read_excel("data/TP_2000_2004.xlsx") |> 
-#   fselect(1:10)
-# IN2 <- read_excel("data/TP_2016_2020.xlsx") |> 
-#   fselect(1:10)
-# 
-# IN1 <-
-#   IN1 |> 
-#   mutate(period = "2000-2004",
-#          time_mid = 2002)
-# IN2 <-
-#   IN2 |> 
-#   mutate(period = "2016-2020",
-#          time_mid = 2018)
-# 
-# IN <-
-#   bind_rows(IN1, IN2)
-# 
 # head(IN)
 IN <- read_csv("data/TP_final.csv.gz", show_col_types = FALSE)  |> 
-  filter(version == "p_ps") |> 
+  filter(version == "ps_fit_constrained") |> 
   select(period, gender, educ, transition, age, p) |> 
   pivot_wider(names_from = transition, values_from = p) |> 
   mutate(HH = if_else(is.na(HH),1 - HU - HD, HH),
@@ -29,14 +12,48 @@ IN <- read_csv("data/TP_final.csv.gz", show_col_types = FALSE)  |>
          time_mid = if_else(period == "2016-2020",2018,2002)) |> 
   arrange(period, educ, gender, age)
 
-# this is 8 different decompositions, so it takes
-# slightly longer than before
+
+# read_csv("data/TP_final.csv.gz", show_col_types = FALSE)  |> 
+#   filter(version == "ps_fit_constrained",
+#          grepl(transition,pattern = "HD")) |> 
+#   group_by(period, educ, gender, age) |> 
+#   summarize(resid = sum(p[transition!="HD"]) - p[transition == "HD"])
+
 dec <-
   IN |> 
   group_by(educ, gender) |> 
   group_modify(~do_dec_time(data = .x)) |> 
   ungroup()
 
+# Now the mortality effect can split into cause-specific effects.
+# Check it out!
+HD_sen <- dec |> 
+  filter(transition == "HD") |> 
+  select(-transition, -p, -delta)
+
+HD_deltas <-
+  IN |> 
+  select(period, gender, educ, age, HD1, HD2, HD3) |> 
+  filter(age > 40) |> 
+  mutate(age = age - 0.25) |> 
+  pivot_longer(HD1:HD3, names_to = "transition", values_to = "p") |> 
+  pivot_wider(names_from = period, values_from = p) |> 
+  mutate(delta = `2016-2020` - `2000-2004`) |> 
+  select(gender, educ, age, transition, delta, p)
+
+HD_cc <- HD_deltas |> 
+  left_join(HD_sen, by = join_by(gender, educ, age)) |> 
+  mutate(cc = delta * effect)
+
+# check equal
+HD_cc |> 
+  group_by(gender, educ, age) |> 
+  summarize(cc_check = sum(cc),
+            .groups = "drop") |> 
+  left_join(HD_sen,
+            by = join_by(gender, educ, age)) |> 
+  mutate(cc_resid = cc_check - cc) 
+  
 
 # To know how to weight these, we need all cvd-free life
 # expectancies, for use in a Kitagawa decomposition.
@@ -84,15 +101,6 @@ prev_for_kit |>
   group_by(gender) |> 
   summarize(check1 = sum(prev_1),
             check2 = sum(prev_2))
-# prev_for_kit <- tibble(educ = c("basic","secondary","tertiary",
-#                                 "basic","secondary","tertiary"),
-#                        gender = c(rep("men",3),rep("women",3)),
-#                        prev_1 = c(0.1685,0.5057,0.3258,0.0961,0.4350,0.4689),
-#                        prev_2 = c(0.1554,0.4693,0.3753,0.0787,0.3544,0.5669)) |> 
-#   group_by(gender) |> 
-#   mutate(prev_1 = prev_1 / sum(prev_1),
-#          prev_2 = prev_2 / sum(prev_2))
-
 
 # Perform Kitagawa decomposition. Structure effects must be summed;
 # rate effects we use to reweight group0-wise decompositions. This is two decomps,
@@ -132,7 +140,9 @@ total_hle <-
 # reweight decompositions:
 dec_total <-
   dec |> 
-  filter(educ != "total") |> 
+  filter(educ != "total",
+         transition != "HD") |>
+  
   left_join(dec_weights, by = join_by(educ,gender)) |> 
   group_by(gender,educ) |> 
   mutate(cc_total = (cc / sum(cc)) * rate_effect)
