@@ -7,15 +7,6 @@ dat_emp <- read_csv("data/emp_probs_cod.csv.gz",
 denoms <- read_csv("data/denoms.csv.gz",
                    show_col_types = FALSE)
 
-ps_results |> 
-  pivot_wider(names_from = transition, values_from = ps_fit) |> 
-  mutate(HD_resid = HD1 + HD2 + HD3 - HD,
-         UD_resid = UD1 + UD2 + UD3 - UD) |> 
-  ggplot(aes(x = age, y = HD_resid, color = educ)) +
-  geom_line() +
-  theme_minimal() +
-  facet_wrap(gender~period)
-
 ps_results <- 
   dat_emp |> 
   mutate(state_from = substr(transition,1,1)) |> 
@@ -23,7 +14,14 @@ ps_results <-
   rename(EMP = p) |> 
   group_by(period, gender, educ, transition) |> 
   group_modify(~ pspline_gam_chunk(chunk = .x, k = 5))
-
+# ps_results |> 
+#   pivot_wider(names_from = transition, values_from = ps_fit) |> 
+#   mutate(HD_resid = HD1 + HD2 + HD3 - HD,
+#          UD_resid = UD1 + UD2 + UD3 - UD) |> 
+#   ggplot(aes(x = age, y = HD_resid, color = educ)) +
+#   geom_line() +
+#   theme_minimal() +
+#   facet_wrap(gender~period)
 
 ps_results_constrained <-
   ps_results |> 
@@ -41,19 +39,23 @@ ps_results_constrained <-
                names_to = "transition", 
                values_to = "ps_fit_constrained")
 
-ps_both <-
+p_all <-
   full_join(ps_results, 
             ps_results_constrained,
-            by = join_by(period, gender, educ, transition, age))
+            by = join_by(period, gender, educ, transition, age)) |> 
+  left_join(dat_emp, 
+            by = join_by(period, gender, educ, transition, age)) |> 
+  rename(p_emp = p)
 
-# ps_both |> 
-#   filter(transition == "HU") |> 
-#   ggplot(aes(x = age, y = ps_fit, color = educ)) +
+write_csv(p_all, file = "data/TP_final.csv.gz")
+# p_all |> 
+#   filter(transition == "HD3") |> 
+#   ggplot(aes(x = age, y = ps_fit_constrained, color = gender)) +
 #   geom_line() +
 #   theme_minimal() +
-#   facet_wrap(gender~period) +
+#   facet_wrap(educ~period) +
 #   scale_y_log10() +
-#   geom_line(mapping = aes(x = age, y = ps_fit_constrained), linetype = 2)
+#   geom_point(mapping = aes(x = age, y = p_emp),alpha=.2)
 
 # ps_both |> 
 #   filter(transition %in% c("HD2","UD2")) |> 
