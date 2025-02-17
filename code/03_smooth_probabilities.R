@@ -9,6 +9,11 @@ denoms <- read_csv("data/denoms.csv.gz",
 
 ps_results <- 
   dat_emp |> 
+  pivot_wider(names_from = transition, values_from = p) |> 
+  mutate(HD3 = HD3 + HD4,
+         UD3 = UD3 + UD4) |> 
+  select(-HD4, -UD4) |> 
+  pivot_longer(HU:UD, names_to = "transition",values_to = "p") |> 
   mutate(state_from = substr(transition,1,1)) |> 
   left_join(denoms, by = join_by(period, gender, educ, age, state_from)) |> 
   rename(EMP = p) |> 
@@ -50,7 +55,10 @@ p_all <-
                names_to = "version",
                values_to = "p")
 
-write_csv(p_all, file = "data/TP_final.csv.gz")
+# write_csv(p_all, file = "data/TP_final.csv.gz")
+
+
+
 # p_all |> 
 #   filter(transition == "HD3") |> 
 #   ggplot(aes(x = age, y = ps_fit_constrained, color = gender)) +
@@ -132,8 +140,7 @@ init <-
   group_by(period,  gender, educ) |> 
   mutate(init = init / sum(init)) |> 
   ungroup() |> 
-  mutate(transition = paste0(state_from, state_from),
-         period = if_else(period == "2000_04","2000-2004","2016-2020")) |> 
+  mutate(transition = paste0(state_from, state_from)) |> 
   cross_join(versions) |> 
   mutate(age = 40) |> 
   rename(p = init) |> 
@@ -176,10 +183,9 @@ write_csv(TP_final, "data/TP_final.csv.gz")
 
 # create prev_edu datafile 
 prev_edu <-
-  dat_out |> 
+  denoms |> 
   filter(age < 45,
          educ != "total") |> 
-  mutate(state_from = substr(transition,1,1)) |> 
   select(period, gender, educ, state_from, age, denom) |> 
   group_by(period, gender, educ, age, state_from) |> 
   slice(1) |> 
