@@ -193,7 +193,6 @@ prev_edu <-
   summarize(init = sum(denom), .groups = "drop") |> 
   group_by(period,  gender) |> 
   mutate(init = init / sum(init)) |> 
-  ungroup() |> 
-  mutate(period = if_else(period == "2000_04","2000-2004","2016-2020"))
+  ungroup() 
 
 write_csv(prev_edu, "data/prev_edu.csv")
