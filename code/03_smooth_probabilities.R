@@ -108,18 +108,18 @@ write_csv(p_all, file = "data/TP_final.csv.gz")
 #   mutate(period = if_else(period == "2000_04","2000-2004","2016-2020"))
 
 
-all_compare <- 
-  ps_both |> 
-  left_join(dat_emp, by = join_by(period, gender, educ, transition, age)) |> 
-  rename(p_emp = p,
-         p_ps = ps_fit,
-         p_psc = ps_fit_constrained) |> 
-  pivot_longer(c(p_emp,p_ps,p_psc), names_to = "version", values_to = "p")
+# all_compare <- 
+#   ps_both |> 
+#   left_join(dat_emp, by = join_by(period, gender, educ, transition, age)) |> 
+#   rename(p_emp = p,
+#          p_ps = ps_fit,
+#          p_psc = ps_fit_constrained) |> 
+#   pivot_longer(c(p_emp,p_ps,p_psc), names_to = "version", values_to = "p")
 
 
 # get initial conditions coded same as before
 # under HH and UU
-versions <- all_compare |> 
+versions <- p_all |> 
   ungroup() |> 
   select(version) |> 
   distinct()
@@ -136,11 +136,12 @@ init <-
          period = if_else(period == "2000_04","2000-2004","2016-2020")) |> 
   cross_join(versions) |> 
   mutate(age = 40) |> 
-  rename(p = init) 
+  rename(p = init) |> 
+  select(all_of(colnames(p_all)))
 
 # join together in our standard way
 TP_final <-
-  all_compare |> 
+  p_all |> 
   filter(age > 40) |> 
   bind_rows(init) |> 
   arrange(version, period, gender, educ, transition, age)
