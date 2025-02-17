@@ -1,7 +1,6 @@
 source("code/00_setup.R")
 source("code/01_functions.R")
 
-# head(IN)
 IN <- read_csv("data/TP_final.csv.gz", show_col_types = FALSE)  |> 
   filter(version == "ps_fit_constrained") |> 
   select(period, gender, educ, transition, age, p) |> 
@@ -12,13 +11,7 @@ IN <- read_csv("data/TP_final.csv.gz", show_col_types = FALSE)  |>
          time_mid = if_else(period == "2016-2020",2018,2002)) |> 
   arrange(period, educ, gender, age)
 
-
-# read_csv("data/TP_final.csv.gz", show_col_types = FALSE)  |> 
-#   filter(version == "ps_fit_constrained",
-#          grepl(transition,pattern = "HD")) |> 
-#   group_by(period, educ, gender, age) |> 
-#   summarize(resid = sum(p[transition!="HD"]) - p[transition == "HD"])
-
+# perform decomposition for each subgroup
 dec <-
   IN |> 
   group_by(educ, gender) |> 
@@ -80,18 +73,6 @@ le_for_kit <- expectancies |>
   arrange(gender, educ) |> 
   rename(HLE_1 = `HLE_2000-2004`,
          HLE_2 = `HLE_2016-2020`)
-
-# age 40 prevalence emailed 16 dec 2024
-# 2000-04: 
-#   Men: Basic-0.1685, Secondary-0.5057, Tertiary-0.3258
-# Women: Basic-0.0961, Secondary-0.4350, Tertiary-0.4689
-# 
-# 2016-20: 
-#   Men: Basic-0.1554, Secondary-0.4693, Tertiary-0.3753
-# Women: Basic-0.0787, Secondary-0.3544, Tertiary-0.5669
-
-# Prevalence values hard coded. These come from exact age 40; we may replace
-# these prevalence averages from ages 38-42 or so. 
 
 prev_for_kit <- read_csv("data/prev_edu.csv", show_col_types = FALSE) |> 
   pivot_wider(names_from = period, values_from = init, names_prefix = "prev_") |> 
@@ -173,3 +154,7 @@ write_csv(dec_total,"data/dec_total_time.csv.gz")
 write_csv(kit,"data/kitagawa_time.csv")
 
 
+dec_total |> 
+  group_by(gender, transition) |> 
+  summarize(cc = sum(cc_total)) |> 
+  pivot_wider(names_from = gender, values_from =cc)

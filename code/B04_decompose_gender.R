@@ -1,11 +1,8 @@
 source("code/00_setup.R")
 source("code/01_functions.R")
 
-# IN2 <- read_excel("data/TP_2016_2020.xlsx") |> 
-#   fselect(1:10)
-
 IN <- read_csv("data/TP_final.csv.gz",show_col_types = FALSE) |> 
-  filter(version == "p_ps") |> 
+  filter(version == "ps_fit_constrained") |> 
   select(period, gender, educ, transition, age, p) |> 
   pivot_wider(names_from = transition, values_from = p) |> 
   mutate(HH = if_else(is.na(HH),1 - HU - HD, HH),
@@ -23,6 +20,36 @@ dec <-
   group_by(educ, period) |> 
   group_modify(~do_dec_gender(data = .x)) |> 
   ungroup()
+
+# Now for COD
+HD_sen <- dec |> 
+  filter(transition == "HD") |> 
+  select(-transition, -p, -delta)
+
+HD_deltas <-
+  IN |> 
+  select(period, gender, educ, age, HD1, HD2, HD3) |> 
+  filter(age > 40) |> 
+  mutate(age = age - 0.25) |> 
+  pivot_longer(HD1:HD3, names_to = "transition", values_to = "p") |> 
+  pivot_wider(names_from = gender, values_from = p) |> 
+  mutate(delta = women - men,
+         p = (women + men) / 2) |> 
+  select(period, educ, age, transition, delta, p)
+
+HD_cc <- HD_deltas |> 
+  left_join(HD_sen, by = join_by(period, educ, age)) |> 
+  mutate(cc = delta * effect)
+
+# check equal
+HD_cc |> 
+  group_by(period, educ, age) |> 
+  summarize(cc_check = sum(cc),
+            .groups = "drop") |> 
+  left_join(HD_sen,
+            by = join_by(period, educ, age)) |> 
+  mutate(cc_resid = cc_check - cc) 
+
 
 # To know how to weight these, we need all cvd-free life
 # expectancies, for use in a Kitagawa decomposition.
@@ -43,14 +70,6 @@ total_non_stationary <- expectancies |>
 # Only need educ-specific expectancies for kitagawa
 le_for_kit <- expectancies |> 
   filter(educ != "total")
-
-# Prevalence values hard coded. These come from exact age 40; we may replace
-# these prevalence averages from ages 38-42 or so. 
-# prev_for_kit <- tibble(educ = c("basic","secondary","tertiary"),
-#                        prev_m = c(.155,.469,.375),
-#                        prev_f = c(.079,.354,.567)) |> 
-#   mutate(prev_m = prev_m / sum(prev_m),
-#          prev_f = prev_f / sum(prev_f))
 
 prev_edu |> group_by(period, gender) |> summarize(check = sum(init))
 
@@ -94,7 +113,10 @@ total_hle <-
 # reweight decompositions:
 dec_total <-
   dec |> 
-  filter(educ != "total") |> 
+  ungroup() |> 
+  bind_rows(HD_cc) |> 
+  filter(educ != "total",
+         transition != "HD") |> 
   left_join(dec_weights, by = join_by(educ, period)) |> 
   group_by(educ, period) |> 
   mutate(cc_total = (cc / sum(cc)) * rate_effect)
