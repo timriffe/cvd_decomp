@@ -45,7 +45,10 @@ p_all <-
             by = join_by(period, gender, educ, transition, age)) |> 
   left_join(dat_emp, 
             by = join_by(period, gender, educ, transition, age)) |> 
-  rename(p_emp = p)
+  rename(p_emp = p) |> 
+  pivot_longer(c(ps_fit,ps_fit_constrained,p_emp),
+               names_to = "version",
+               values_to = "p")
 
 write_csv(p_all, file = "data/TP_final.csv.gz")
 # p_all |> 
