@@ -38,7 +38,8 @@ HD_deltas <-
   mutate(age = age - 0.25) |> 
   pivot_longer(HD1:HD3, names_to = "transition", values_to = "p") |> 
   pivot_wider(names_from = period, values_from = p) |> 
-  mutate(delta = `2016-2020` - `2000-2004`) |> 
+  mutate(delta = `2016-2020` - `2000-2004`,
+         p = (`2016-2020` + `2000-2004`)/2) |> 
   select(gender, educ, age, transition, delta, p)
 
 HD_cc <- HD_deltas |> 
@@ -140,12 +141,16 @@ total_hle <-
 # reweight decompositions:
 dec_total <-
   dec |> 
+  ungroup() |> 
+  bind_rows(HD_cc) |> 
   filter(educ != "total",
          transition != "HD") |>
-  
   left_join(dec_weights, by = join_by(educ,gender)) |> 
   group_by(gender,educ) |> 
-  mutate(cc_total = (cc / sum(cc)) * rate_effect)
+  mutate(cc_total = (cc / sum(cc)) * rate_effect) |> 
+  ungroup() |> 
+  arrange(gender, educ, transition, age)
+
 
 # Our complete decomposition, to check sums
 dt <- 
