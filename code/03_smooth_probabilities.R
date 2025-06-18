@@ -10,9 +10,9 @@ denoms <- read_csv("data/denoms.csv.gz",
 ps_results <- 
   dat_emp |> 
   pivot_wider(names_from = transition, values_from = p) |> 
-  mutate(HD3 = HD3 + HD4,
-         UD3 = UD3 + UD4) |> 
-  select(-HD4, -UD4) |> 
+  # mutate(HD3 = HD3 + HD4,
+  #        UD3 = UD3 + UD4) |> 
+  # select(-HD4, -UD4) |> 
   pivot_longer(HU:UD, names_to = "transition",values_to = "p") |> 
   mutate(state_from = substr(transition,1,1)) |> 
   left_join(denoms, by = join_by(period, gender, educ, age, state_from)) |> 
