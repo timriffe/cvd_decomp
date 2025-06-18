@@ -13,26 +13,28 @@ IN <- read_csv("data/TP_final.csv.gz", show_col_types = FALSE)  |>
 
 # here down copied from other one, needs to be re-set to time decomp,
 # and consider role of mort now that it's split
-IN3 <- 
-  IN2 |> 
+IN2 <- 
+  IN |> 
   mutate(HH = if_else(!is.na(HU),HH + HU / 2,HH),
          HU = HU / 2)
 
 # decompositions between like-education groups, i.e.
 # basic vs basic, etc includes initial health conditions.
-dec3 <- 
-  IN3 |> 
+dec2 <- 
+  IN2 |> 
   group_by(educ) |> 
-  group_modify(~do_dec(data = .x)) |> 
+  group_modify(~do_dec_time(data = .x)) |> 
   ungroup()
 
 # To know how to weight these, we need all cvd-free life
 # expectancies, for use in a Kitagawa decomposition.
-expectancies3 <-
-  IN3 |> 
+expectancies2 <-
+  IN2 |> 
   group_by(educ, sex) |> 
   summarize(HLE = calc_expectancy(ptibble=.data)) |> 
-  pivot_wider(names_from = sex, values_from = HLE, names_prefix = "HLE_")
+  pivot_wider(names_from = sex, 
+              values_from = HLE, 
+              names_prefix = "HLE_")
 
 # An expectancy calculated based on the total education group
 # is not stationary insofar as the underlying education composition
