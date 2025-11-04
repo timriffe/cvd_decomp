@@ -7,6 +7,23 @@ dat_emp <- read_csv("data/emp_probs_cod.csv.gz",
 denoms <- read_csv("data/denoms.csv.gz",
                    show_col_types = FALSE)
 
+# dat_emp |> 
+#   filter(transition == "HU")|> 
+#   mutate(state_from = substr(transition,1,1)) |> 
+#   left_join(denoms, by = join_by(period, gender, educ, age, state_from)) |> 
+#   filter(age < 50) |> 
+#   mutate(cases = p * denom) |> 
+#   group_by(period, gender, educ) |> 
+#   summarize(cases = sum(cases, na.rm=TRUE),
+#             denom = sum(denom), .groups="drop") |> 
+#   mutate(p_emp = cases / denom) |> 
+#   select(-cases,-denom) |> 
+#   ggplot(aes(x = period, y = p_emp)) +
+#   geom_point() +
+#   facet_wrap(gender ~ educ)
+
+
+
 ps_results <- 
   dat_emp |> 
   pivot_wider(names_from = transition, values_from = p) |> 

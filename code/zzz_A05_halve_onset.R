@@ -1,3 +1,9 @@
+# a counterfactual. Maybe better to either do a data-driven extrapolation 
+# of incidence, or else swap in incidence from a real population where it's
+# doing better. However, we have a restrictive definition of CVD, and other
+# previous estimates might have a more inclusive definition, which would look
+# like a higher rate even if 
+
 source("code/00_setup.R")
 source("code/01_functions.R")
 
@@ -10,6 +16,34 @@ IN <- read_csv("data/TP_final.csv.gz", show_col_types = FALSE)  |>
          UU = if_else(is.na(UU), 1 - UD - UH, UU),
          time_mid = if_else(period == "2016-2020",2018,2002)) |> 
   arrange(period, educ, gender, age)
+
+# how did HU actually change
+IN |> 
+  filter(age<50) |> 
+  select(period,    gender,educ, age, HU) |> 
+  ggplot(aes(x= age, y = HU, color = period)) +
+  geom_line() +
+  facet_wrap(gender~educ) 
+
+IN |> 
+  select(period,    gender,educ, age, HD) |> 
+  pivot_wider(names_from = period, values_from = HD) |> 
+  mutate(ratio = `2016-2020` / `2000-2004`,
+         incidence_future = if_else(ratio < 1, ratio * `2016-2020`, `2016-2020`)) |> 
+  ggplot(aes(x= age, y = incidence_future)) +
+  geom_line() +
+  geom_line(aes(y=`2016-2020`), color = "red") +
+  geom_line(aes(y=`2000-2004`), color = "blue") +
+  facet_wrap(gender~educ) +
+  scale_y_log10()
+
+IN |> 
+  select(period,    gender,educ, age, HU) |> 
+  pivot_wider(names_from = period, values_from = HU) |> 
+  mutate(ratio = `2016-2020` / `2000-2004`) |> 
+  summarize(mlr = mean(log(ratio),na.rm=TRUE)) |> 
+  mutate(mr = exp(mlr),
+         improvement = 1/mr)
 
 # here down copied from other one, needs to be re-set to time decomp,
 # and consider role of mort now that it's split
