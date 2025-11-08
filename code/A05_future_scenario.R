@@ -62,24 +62,24 @@ projected_p <-
 # projected_p |> 
 # 
 #   filter(age==40) |> View()
-future_csvfle <- 
+future_cvdfle <- 
   projected_p |> 
   mutate(HH = if_else(age==40 & period == "2032-2036",1-UU,HH)) |> 
   group_by(period, gender, educ) |> 
   summarize(HLE = calc_expectancy(ptibble=.data)) |> 
   pivot_wider(names_from = period, values_from= HLE) 
-future_csvfle
-future_csvfle |> 
+future_cvdfle
+future_cvdfle |> 
 write_csv(file="data/future_cvdfle.csv")
 
 # the edu gap would grow:
-future_csvfle |> 
+future_cvdfle |> 
   pivot_longer(3:5, names_to = "period", values_to = "CVDFLE") |> 
   pivot_wider(names_from = educ, values_from = CVDFLE) |> 
   mutate(gap = tertiary - basic)
 
 # the gender gap would shrink:
-future_csvfle |> 
+future_cvdfle |> 
   pivot_longer(3:5, names_to = "period", values_to = "CVDFLE") |> 
   pivot_wider(names_from = gender, values_from = CVDFLE) |> 
   mutate(gap = women - men) |> 
@@ -87,4 +87,22 @@ future_csvfle |>
   pivot_wider(names_from = period, values_from = gap)
 
 
+# Weighted total CVDFLE:
+# assumptions for 2032-2036:
+# Men:        basic (17) secondary (58) tertiary (25)
+# Women: basic (13) secondary (48) tertiary (39)
+prev_educ <- read_csv("data/prev_edu.csv", show_col_types = FALSE) |> 
+  bind_rows(
+tibble(period = rep("2032-2036",6),
+       gender = c(rep("men",3),rep("women",3)),
+       educ = rep(c("basic","secondary","tertiary"),2),
+       init = c(.17,.58,.25,.13,.48,.39)
+       ))
 
+future_cvdfle |> 
+  pivot_longer(-c(gender, educ),
+               names_to = "period",
+               values_to = "CVDFLE") |> 
+  right_join(prev_educ,by = join_by(gender, educ, period)) |> 
+  group_by(gender, period) |> 
+  summarize(CVDFLE = sum(CVDFLE * init))
