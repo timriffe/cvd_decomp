@@ -98,7 +98,12 @@ tibble(period = rep("2032-2036",6),
        educ = rep(c("basic","secondary","tertiary"),2),
        init = c(.17,.58,.25,.13,.48,.39)
        ))
+# It seems educ prevalence not moving upward?
+prev_educ |> 
+  pivot_wider(names_from = period, values_from = init)
 
+# weighted total, in this case the 2032-2036 educ prevalence is
+# less favorable than in 2016-2020.
 future_cvdfle |> 
   pivot_longer(-c(gender, educ),
                names_to = "period",
@@ -106,3 +111,5 @@ future_cvdfle |>
   right_join(prev_educ,by = join_by(gender, educ, period)) |> 
   group_by(gender, period) |> 
   summarize(CVDFLE = sum(CVDFLE * init))
+
+
