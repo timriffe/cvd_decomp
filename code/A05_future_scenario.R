@@ -2,32 +2,75 @@
 
 source("code/00_setup.R")
 source("code/01_functions.R")
+# Project 1:
+#   Please find below the educational composition at age 25-29 in 2016-2020:
+#   
+#   Men:        basic (17) secondary (58) tertiary (25)
+# Women: basic (13) secondary (48) tertiary (39)
+
+# time_mid = if_else(period == "2016-2020",2018,2002)
 
 IN <- read_csv("data/TP_final.csv.gz", show_col_types = FALSE)  |> 
   filter(version == "ps_fit_constrained") |> 
   select(period, gender, educ, transition, age, p) |> 
   pivot_wider(names_from = transition, values_from = p) |> 
-  mutate(HH = if_else(is.na(HH),1 - HU - HD, HH),
-         UH = 0,
-         UU = if_else(is.na(UU), 1 - UD - UH, UU),
-         time_mid = if_else(period == "2016-2020",2018,2002)) |> 
-  arrange(period, educ, gender, age)
+  mutate(UH = 0,
+         UU = if_else(is.na(UU), 1 - UD - UH, UU)) |> 
+  arrange(period, educ, gender, age) 
 
-IN |> 
-  select(period,    gender,educ, age, HD) |> 
-  pivot_wider(names_from = period, values_from = HD) |> 
-  mutate(ratio = `2016-2020` / `2000-2004`,
-         incidence_future = if_else(ratio < 1, ratio * `2016-2020`, `2016-2020`)) |> 
-  ggplot(aes(x= age, y = incidence_future)) +
-  geom_line() +
-  geom_line(aes(y=`2016-2020`), color = "red") +
-  geom_line(aes(y=`2000-2004`), color = "blue") +
-  facet_wrap(gender~educ) +
-  scale_y_log10()
-
+Hprojected <-
+  IN |> 
+  select(period,    gender,educ, age, HD, HU,HH) |> 
+  pivot_wider(names_from = period, values_from = c(HU,HD,HH)) |> 
+  mutate(HU_ratio = `HU_2016-2020` / `HU_2000-2004`,
+         `HU_2032-2036` = if_else(HU_ratio < 1, 
+                                       HU_ratio * `HU_2016-2020`, 
+                                       `HU_2016-2020`),
+         HD_ratio = `HD_2016-2020` / `HD_2000-2004`,
+         `HD_2032-2036` = if_else(HD_ratio < 1, 
+                                       HD_ratio * `HD_2016-2020`, 
+                                       `HD_2016-2020`)) |> 
+  select(-ends_with("ratio")) |> 
+  pivot_longer(-c(gender,educ,age), 
+               names_to = c("transition","period"), 
+               values_to = "p", 
+               names_sep = "_") |> 
+    pivot_wider(names_from = transition, values_from = p) |> 
+    mutate(HH = if_else(age == 40, HH, 1 - HU - HD)) |> 
+    pivot_longer(c(HH,HU,HD), names_to = "transition", values_to = "p") |> 
+    mutate(p = if_else(is.na(p),0,p))
+ 
+projected_part <-
+  IN |> 
+  select(period, gender, educ, age, HH, HD, HU, UU, UH, UD) |> 
+  pivot_longer(HH:UD, names_to = "transition",values_to = "p") |> 
+  filter(transition %in% c("UU","UH","UD"))|> 
+  mutate(p = if_else(is.na(p),0,p)) |> 
+  bind_rows(Hprojected)
+  #HH = if_else(is.na(HH),1 - HU - HD, HH),
 # do same perturbation to HU and HD, then recalculate CVDFLE
+projected_p <-
+  projected_part |> 
+  filter(period == "2016-2020",
+         transition %in% c("UU","UH","UD")) |> 
+  mutate(period = "2032-2036") |> 
+  bind_rows(projected_part) |> 
+  arrange(period, gender, educ, transition, age) |> 
+  pivot_wider(names_from = transition, values_from = p) |> 
+  mutate(HH = if_else(age==40 & period == "2032-2036",1-UU,HH)) 
 
-
+# projected_p |> 
+# 
+#   filter(age==40) |> View()
+future_csvfle <- 
+  projected_p |> 
+  mutate(HH = if_else(age==40 & period == "2032-2036",1-UU,HH)) |> 
+  group_by(period, gender, educ) |> 
+  summarize(HLE = calc_expectancy(ptibble=.data)) |> 
+  pivot_wider(names_from = period, values_from= HLE) 
+future_csvfle
+future_csvfle |> 
+write_csv(file="data/future_cvdfle.csv")
 
 
 
