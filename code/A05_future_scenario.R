@@ -72,9 +72,19 @@ future_csvfle
 future_csvfle |> 
 write_csv(file="data/future_cvdfle.csv")
 
+# the edu gap would grow:
+future_csvfle |> 
+  pivot_longer(3:5, names_to = "period", values_to = "CVDFLE") |> 
+  pivot_wider(names_from = educ, values_from = CVDFLE) |> 
+  mutate(gap = tertiary - basic)
 
-
-
+# the gender gap would shrink:
+future_csvfle |> 
+  pivot_longer(3:5, names_to = "period", values_to = "CVDFLE") |> 
+  pivot_wider(names_from = gender, values_from = CVDFLE) |> 
+  mutate(gap = women - men) |> 
+  select(educ, period, gap) |> 
+  pivot_wider(names_from = period, values_from = gap)
 
 
 
