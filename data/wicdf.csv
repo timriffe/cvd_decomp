@@ -1,0 +1,31 @@
+Source: Wittgenstein Centre for Demography and Global Human Capital (2018). Wittgenstein Centre Data Explorer Version 2.0
+Available at: www.wittgensteincentre.org/dataexplorer 
+
+""
+"Population Size by Education (000's)"
+"De facto population in a country or region, classified by sex and by five-year age groups. Available by level of educational attainment, in all scenarios, and at all geographical scales. Figures are presented in thousands. <br><br> Data for 1950 to 2015: Based on <a href=""http://esa.un.org/wpp/documentation/WPP%202010%20publications.htm"">UN Population Division, World Population Prospects 2017</a>"
+"Medium (SSP2)"
+" "
+"Area","Year","Age","Sex","Education","Population"
+"Finland",2035,"35--39","Male","Total",159.2
+"Finland",2035,"35--39","Female","Total",150.1
+"Finland",2035,"35--39","Male","Under 15",0
+"Finland",2035,"35--39","Female","Under 15",0
+"Finland",2035,"35--39","Male","No Education",0.6
+"Finland",2035,"35--39","Female","No Education",0.7
+"Finland",2035,"35--39","Male","Incomplete Primary",0.4
+"Finland",2035,"35--39","Female","Incomplete Primary",0.4
+"Finland",2035,"35--39","Male","Primary",1.1
+"Finland",2035,"35--39","Female","Primary",0.9
+"Finland",2035,"35--39","Male","Lower Secondary",8.4
+"Finland",2035,"35--39","Female","Lower Secondary",4.6
+"Finland",2035,"35--39","Male","Upper Secondary",78.7
+"Finland",2035,"35--39","Female","Upper Secondary",54
+"Finland",2035,"35--39","Male","Post Secondary",70.1
+"Finland",2035,"35--39","Female","Post Secondary",89.5
+"Finland",2035,"35--39","Male","Short Post Secondary",4.8
+"Finland",2035,"35--39","Female","Short Post Secondary",6
+"Finland",2035,"35--39","Male","Bachelor",40.2
+"Finland",2035,"35--39","Female","Bachelor",51.7
+"Finland",2035,"35--39","Male","Master and higher",25.1
+"Finland",2035,"35--39","Female","Master and higher",31.9

@@ -112,4 +112,18 @@ future_cvdfle |>
   group_by(gender, period) |> 
   summarize(CVDFLE = sum(CVDFLE * init))
 
-
+# Try using Wittgenstein Human Capital Explorer Data
+# https://dataexplorer.wittgensteincentre.org/wcde-v2/
+read_csv("data/wicdf.csv", skip = 8) |> 
+  filter(Education != "Total") |> 
+  mutate(educ = case_when(Education %in% 
+                            c("Under 15","No Education",
+                              "Incomplete Primary","Primary") ~ "basic",
+                          # should "Lower Secondary" be basic too?
+                          Education %in% c("Lower Secondary","Upper Secondary","Post Secondary","Short Post Secondary") ~ "secondary",
+                          # should post secondary (both of them) be tertiary?
+                          TRUE ~ "tertiary")) |> 
+  group_by(Sex, educ) |> 
+  summarize(pop = sum(Population), .groups = "drop") |> 
+  group_by(Sex) |> 
+  mutate(prev = pop / sum(pop))
