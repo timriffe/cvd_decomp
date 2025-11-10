@@ -1,31 +1,49 @@
-Source: Wittgenstein Centre for Demography and Global Human Capital (2018). Wittgenstein Centre Data Explorer Version 2.0
+Source: Wittgenstein Centre for Demography and Global Human Capital (2023). Wittgenstein Centre Data Explorer Version 3.0
 Available at: www.wittgensteincentre.org/dataexplorer 
 
 ""
 "Population Size by Education (000's)"
-"De facto population in a country or region, classified by sex and by five-year age groups. Available by level of educational attainment, in all scenarios, and at all geographical scales. Figures are presented in thousands. <br><br> Data for 1950 to 2015: Based on <a href=""http://esa.un.org/wpp/documentation/WPP%202010%20publications.htm"">UN Population Division, World Population Prospects 2017</a>"
+"De facto population in a country or region, classified by sex and by five-year age groups. Available by level of educational attainment, in all scenarios, and at all geographical scales. Figures are presented in thousands."
 "Medium (SSP2)"
 " "
 "Area","Year","Age","Sex","Education","Population"
-"Finland",2035,"35--39","Male","Total",159.2
-"Finland",2035,"35--39","Female","Total",150.1
-"Finland",2035,"35--39","Male","Under 15",0
-"Finland",2035,"35--39","Female","Under 15",0
-"Finland",2035,"35--39","Male","No Education",0.6
-"Finland",2035,"35--39","Female","No Education",0.7
-"Finland",2035,"35--39","Male","Incomplete Primary",0.4
-"Finland",2035,"35--39","Female","Incomplete Primary",0.4
-"Finland",2035,"35--39","Male","Primary",1.1
-"Finland",2035,"35--39","Female","Primary",0.9
-"Finland",2035,"35--39","Male","Lower Secondary",8.4
-"Finland",2035,"35--39","Female","Lower Secondary",4.6
-"Finland",2035,"35--39","Male","Upper Secondary",78.7
-"Finland",2035,"35--39","Female","Upper Secondary",54
-"Finland",2035,"35--39","Male","Post Secondary",70.1
-"Finland",2035,"35--39","Female","Post Secondary",89.5
-"Finland",2035,"35--39","Male","Short Post Secondary",4.8
-"Finland",2035,"35--39","Female","Short Post Secondary",6
-"Finland",2035,"35--39","Male","Bachelor",40.2
-"Finland",2035,"35--39","Female","Bachelor",51.7
-"Finland",2035,"35--39","Male","Master and higher",25.1
-"Finland",2035,"35--39","Female","Master and higher",31.9
+"Finland",2035,"35--39","Male","Total",166.4
+"Finland",2035,"40--44","Male","Total",185.8
+"Finland",2035,"35--39","Female","Total",157.8
+"Finland",2035,"40--44","Female","Total",176.7
+"Finland",2035,"35--39","Male","No Education",0.1
+"Finland",2035,"40--44","Male","No Education",0.1
+"Finland",2035,"35--39","Female","No Education",0.1
+"Finland",2035,"40--44","Female","No Education",0.1
+"Finland",2035,"35--39","Male","Incomplete Primary",0.1
+"Finland",2035,"40--44","Male","Incomplete Primary",0.2
+"Finland",2035,"35--39","Female","Incomplete Primary",0.1
+"Finland",2035,"40--44","Female","Incomplete Primary",0.2
+"Finland",2035,"35--39","Male","Primary",1.9
+"Finland",2035,"40--44","Male","Primary",2.1
+"Finland",2035,"35--39","Female","Primary",0.2
+"Finland",2035,"40--44","Female","Primary",0.2
+"Finland",2035,"35--39","Male","Lower Secondary",11.9
+"Finland",2035,"40--44","Male","Lower Secondary",16.9
+"Finland",2035,"35--39","Female","Lower Secondary",6.2
+"Finland",2035,"40--44","Female","Lower Secondary",9.4
+"Finland",2035,"35--39","Male","Upper Secondary",79.5
+"Finland",2035,"40--44","Male","Upper Secondary",88.2
+"Finland",2035,"35--39","Female","Upper Secondary",55.9
+"Finland",2035,"40--44","Female","Upper Secondary",66.5
+"Finland",2035,"35--39","Male","Post Secondary",72.9
+"Finland",2035,"40--44","Male","Post Secondary",78.3
+"Finland",2035,"35--39","Female","Post Secondary",95.4
+"Finland",2035,"40--44","Female","Post Secondary",100.3
+"Finland",2035,"35--39","Male","Short Post Secondary",10.6
+"Finland",2035,"40--44","Male","Short Post Secondary",27.3
+"Finland",2035,"35--39","Female","Short Post Secondary",16.3
+"Finland",2035,"40--44","Female","Short Post Secondary",41.5
+"Finland",2035,"35--39","Male","Bachelor",33.3
+"Finland",2035,"40--44","Male","Bachelor",21.7
+"Finland",2035,"35--39","Female","Bachelor",39.9
+"Finland",2035,"40--44","Female","Bachelor",24.4
+"Finland",2035,"35--39","Male","Master and higher",29.3
+"Finland",2035,"40--44","Male","Master and higher",29.6
+"Finland",2035,"35--39","Female","Master and higher",38.9
+"Finland",2035,"40--44","Female","Master and higher",34.1
