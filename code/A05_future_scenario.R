@@ -88,42 +88,48 @@ future_cvdfle |>
 
 
 # Weighted total CVDFLE:
-# assumptions for 2032-2036:
-# Men:        basic (17) secondary (58) tertiary (25)
-# Women: basic (13) secondary (48) tertiary (39)
-prev_educ <- read_csv("data/prev_edu.csv", show_col_types = FALSE) |> 
-  bind_rows(
-tibble(period = rep("2032-2036",6),
-       gender = c(rep("men",3),rep("women",3)),
-       educ = rep(c("basic","secondary","tertiary"),2),
-       init = c(.17,.58,.25,.13,.48,.39)
-       ))
-# It seems educ prevalence not moving upward?
-prev_educ |> 
-  pivot_wider(names_from = period, values_from = init)
+# Period 2032-2036 uses Wittgenstein Human Capital Explorer Data
+# https://dataexplorer.wittgensteincentre.org/wcde-v3/
+# We average educ prevalence in ages 35-39 and 40-44 to center on age 40.
+prev_2035 <-
+  read_csv("data/wicdf.csv", skip = 8) |> 
+  filter(Education != "Total") |> 
+  mutate(educ = case_when(Education %in% 
+                            c("Under 15","No Education",
+                              "Incomplete Primary","Primary","Lower Secondary") ~ "basic",
+                          Education %in% c("Upper Secondary") ~ "secondary",
+                          # tertiary includes Short post secondary, 
+                          # post secondary, bachelor, and master and higher.
+                          TRUE ~ "tertiary")) |> 
+  group_by(Age,Sex, educ) |> 
+  summarize(pop = sum(Population), .groups = "drop") |> 
+  group_by(Age,Sex) |> 
+  mutate(prev = pop / sum(pop)) |> 
+  ungroup() |> 
+  select(-pop) |> 
+  group_by(Sex, educ) |> 
+  summarize(init = mean(prev), .groups= "drop") |> 
+  mutate(gender = if_else(Sex == "Male","men","women")) |> 
+  select(-Sex) |> 
+  mutate(period = "2032-2036")
 
-# weighted total, in this case the 2032-2036 educ prevalence is
-# less favorable than in 2016-2020.
-future_cvdfle |> 
+
+prev_educ <- read_csv("data/prev_edu.csv", show_col_types = FALSE) |> 
+  bind_rows(prev_2035)
+
+# weighted total:
+future_total_cvdfle <-
+  future_cvdfle |> 
   pivot_longer(-c(gender, educ),
                names_to = "period",
                values_to = "CVDFLE") |> 
   right_join(prev_educ,by = join_by(gender, educ, period)) |> 
   group_by(gender, period) |> 
-  summarize(CVDFLE = sum(CVDFLE * init))
+  summarize(CVDFLE = sum(CVDFLE * init)) 
 
-# Try using Wittgenstein Human Capital Explorer Data
-# https://dataexplorer.wittgensteincentre.org/wcde-v2/
-read_csv("data/wicdf.csv", skip = 8) |> 
-  filter(Education != "Total") |> 
-  mutate(educ = case_when(Education %in% 
-                            c("Under 15","No Education",
-                              "Incomplete Primary","Primary") ~ "basic",
-                          # should "Lower Secondary" be basic too?
-                          Education %in% c("Lower Secondary","Upper Secondary","Post Secondary","Short Post Secondary") ~ "secondary",
-                          # should post secondary (both of them) be tertiary?
-                          TRUE ~ "tertiary")) |> 
-  group_by(Sex, educ) |> 
-  summarize(pop = sum(Population), .groups = "drop") |> 
-  group_by(Sex) |> 
-  mutate(prev = pop / sum(pop))
+future_total_cvdfle |> 
+  ggplot(aes(x = parse_number(period) +2, 
+             y = CVDFLE, 
+             color = gender)) + geom_point() + geom_line()
+
+  
