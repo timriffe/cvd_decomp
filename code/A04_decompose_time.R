@@ -153,8 +153,18 @@ total_stationary |>
 write_csv(dec_total,"data/dec_total_time.csv.gz")
 write_csv(kit,"data/kitagawa_time.csv")
 
-
+# Contributions by gender
 dec_total |> 
   group_by(gender, transition) |> 
   summarize(cc = sum(cc_total)) |> 
-  pivot_wider(names_from = gender, values_from =cc)
+  pivot_wider(names_from = gender, values_from =cc) 
+
+# Contributions by education
+dec |> 
+  group_by(gender, educ, transition) |> 
+  filter(educ != "total")|>
+  summarize(cc_sum = sum(cc), .groups = "drop") |> 
+  mutate(cc_sum = round(cc_sum, 1)) |> 
+  pivot_wider(names_from = gender, values_from = cc_sum)
+
+# end
